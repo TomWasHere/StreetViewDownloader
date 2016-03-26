@@ -1,0 +1,15 @@
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\WPFGUI.csprojResolveAssemblyReference.cache
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\MainWindow.baml
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\MainWindow.g.cs
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\App.g.cs
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\StreetviewDownloader_MarkupCompile.cache
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\StreetviewDownloader.g.resources
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\StreetviewDownloader.Properties.Resources.resources
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\WPFGUI.csproj.GenerateResource.Cache
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\StreetviewDownloader.exe
+C:\Source\StreetviewDownloader\StreetviewDownloader\obj\Debug\StreetviewDownloader.pdb
+C:\Source\StreetviewDownloader\StreetviewDownloader\bin\Debug\StreetviewDownloader.exe.config
+C:\Source\StreetviewDownloader\StreetviewDownloader\bin\Debug\StreetviewDownloader.exe
+C:\Source\StreetviewDownloader\StreetviewDownloader\bin\Debug\StreetviewDownloader.pdb
+C:\Source\StreetviewDownloader\StreetviewDownloader\bin\Debug\Downloader.dll
+C:\Source\StreetviewDownloader\StreetviewDownloader\bin\Debug\Downloader.pdb

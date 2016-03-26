@@ -1,0 +1,5 @@
+C:\Source\StreetviewDownloader\Downloader\obj\Debug\Downloader.csprojResolveAssemblyReference.cache
+C:\Source\StreetviewDownloader\Downloader\bin\Debug\Downloader.dll
+C:\Source\StreetviewDownloader\Downloader\bin\Debug\Downloader.pdb
+C:\Source\StreetviewDownloader\Downloader\obj\Debug\Downloader.dll
+C:\Source\StreetviewDownloader\Downloader\obj\Debug\Downloader.pdb
