@@ -12,6 +12,7 @@ namespace Downloader
     public class Downloader
     {
         private string CACHE_DIRECTORY_PATH;
+        private bool keepTiles = true;
 
         /// <summary>Constructor</summary>
         /// <param name="cacheFilePath">The system file path to the directory to store cached images</param>
@@ -79,15 +80,20 @@ namespace Downloader
 
             int imageWidth = 512 * (verticalSlices + 1);
             int imageHeight = 512 * (horizontalSlices + 1);
-            if (zoomLevel == 3)
+
+            if (zoomLevel == 2)
             {
+                imageWidth = 1664;
+                imageHeight = 832;
+            } else if (zoomLevel == 3) {
                 imageWidth = 3328;
                 imageHeight = 1664;
-            }
-            if (zoomLevel == 4)
-            {
+            } else if (zoomLevel == 4) {
                 imageWidth = 6656;
-                imageHeight = 3329;
+                imageHeight = 3328;
+            } else if (zoomLevel == 5) {
+                imageWidth = 3328;
+                imageHeight = 6656;
             }
 
             using (System.Drawing.Image grandImage = new Bitmap(imageWidth, imageHeight))
@@ -98,7 +104,7 @@ namespace Downloader
                 {
                     for (int x = 0; x <= verticalSlices; x++)
                     {
-                        string cacheName = zoomLevel + zero(y) + zero(x) + ".jpg";
+                        string cacheName = zoomLevel + Zero(y) + Zero(x) + ".jpg";
                         System.Drawing.Image tile = new Bitmap(CACHE_DIRECTORY_PATH + panoId + @"\" + cacheName);
 
                         using (Graphics g = Graphics.FromImage(grandImage))
@@ -121,17 +127,19 @@ namespace Downloader
             }
 
             // Clean up the tiles
-            /*for (int y = 0; y <= horizontalSlices; y++)
-            {
-                for (int x = 0; x <= verticalSlices; x++)
+            if (!keepTiles) { 
+                for (int y = 0; y <= horizontalSlices; y++)
                 {
-                    string cacheName = zoomLevel + zero(y) + zero(x) + ".jpg";
-                    if (File.Exists(CACHE_DIRECTORY_PATH + cacheName))
+                    for (int x = 0; x <= verticalSlices; x++)
                     {
-                        File.Delete(CACHE_DIRECTORY_PATH + cacheName);
+                        string cacheName = zoomLevel + Zero(y) + Zero(x) + ".jpg";
+                        if (File.Exists(CACHE_DIRECTORY_PATH + cacheName))
+                        {
+                            File.Delete(CACHE_DIRECTORY_PATH + cacheName);
+                        }
                     }
                 }
-            }*/
+            }
 
         }
 
@@ -148,7 +156,7 @@ namespace Downloader
                 for (int x = 0; x <= verticalSlices; x++)
                 {
                     string Url = basepath + "&panoid=" + panoId + "&x=" + x + "&y=" + y;
-                    string cacheName = zoomLevel + zero(y) + zero(x) + ".jpg";
+                    string cacheName = zoomLevel + Zero(y) + Zero(x) + ".jpg";
                     string filePathAndCacheName = CACHE_DIRECTORY_PATH + panoId + @"\" + cacheName;
 
                     if (!File.Exists(filePathAndCacheName) || new FileInfo(filePathAndCacheName).Length == 0)
@@ -178,10 +186,95 @@ namespace Downloader
             }
         }
 
+        /// <summary>
+        /// Change the viewing size and viewing direction (Yaw) of a 360 image. For example change the heading to be 0 degrees (North) and restrict the view port to 180 degrees
+        /// </summary>
+        /// <param name="originalImage"></param>
+        /// <param name="originalHeading">Centre of the image. In degrees</param>
+        /// <param name="desiredHeading">Desired new centre of the image. In degrees</param>
+        /// <param name="desiredSize">In degrees</param>
+        /// <returns></returns>
+        public Image ManipulateImage(Image originalImage, decimal originalHeading, decimal desiredHeading, decimal desiredSize)
+        {
+            decimal headingDelta = (Mod((desiredHeading - originalHeading + 180), 360)) - 180; //The angle difference between panoH and desired H
+            Image maniuplatedImage = new Bitmap(originalImage);
+            int imageWidth = maniuplatedImage.Width;
+            int imageHeight = maniuplatedImage.Height;
+            decimal pixelDegreeSize = imageWidth / 360;
+
+            if (originalHeading != desiredHeading)
+            {
+                //Make the desired heading the new centre of the image
+                decimal headingPixelPosition = (pixelDegreeSize * headingDelta) + (imageWidth / 2);
+                using (Image intermediate = new Bitmap(imageWidth, imageHeight))
+                {
+                    using (Graphics g = Graphics.FromImage(intermediate))
+                    {
+                        if ((Mod((originalHeading - desiredHeading), 360)) > 180)
+                        {
+                            //Desired heading is on the right hand side of centre
+                            int newLeftHandPixelPosition = decimal.ToInt32(headingPixelPosition - (180 * pixelDegreeSize)); //This position will become far left.
+                            Rectangle newLeftHandSide = new Rectangle(newLeftHandPixelPosition, 0, imageWidth - newLeftHandPixelPosition, imageHeight);
+                            Rectangle newRightHandSide = new Rectangle(0, 0, newLeftHandPixelPosition, imageHeight);
+
+                            g.DrawImage(originalImage, 0, 0, newLeftHandSide, GraphicsUnit.Pixel);
+                            g.DrawImage(originalImage, imageWidth - newLeftHandPixelPosition, 0, newRightHandSide, GraphicsUnit.Pixel);
+                        }
+                        else
+                        {
+                            //Desired heading is on the left hand side of the centre
+                            int newRightHandPixelPosition = decimal.ToInt32(headingPixelPosition + (180 * pixelDegreeSize));
+                            Rectangle newRightHandSide = new Rectangle(0, 0, newRightHandPixelPosition, imageHeight);
+                            Rectangle newLeftHandSide = new Rectangle(newRightHandPixelPosition, 0, imageWidth - newRightHandPixelPosition, imageHeight);
+
+                            g.DrawImage(originalImage, 0, 0, newLeftHandSide, GraphicsUnit.Pixel);
+                            g.DrawImage(originalImage, imageWidth - newRightHandPixelPosition, 0, newRightHandSide, GraphicsUnit.Pixel);
+                        }
+                    }
+
+                    //Update the image
+                    using (Graphics g = Graphics.FromImage(maniuplatedImage))
+                    {
+                        g.DrawImage(intermediate, 0, 0);
+                    }
+                }
+            }
+
+            if (desiredSize < 360)
+            {
+                int leftHandCropX = decimal.ToInt32((180 - (desiredSize / 2)) * pixelDegreeSize);
+                int imageCropWidth = decimal.ToInt32(pixelDegreeSize * desiredSize);
+
+                //Go with a 16:9 ratio aka 1.77:1
+                int imageCropHeight = decimal.ToInt32(imageCropWidth / 1.7777777m);
+                if (imageCropHeight > imageHeight)
+                {
+                    imageCropHeight = imageHeight;
+                }
+                int leftHandCropY = (imageHeight / 2) - (imageCropHeight / 2);
+
+                using (Image resizedImage = new Bitmap(imageCropWidth, imageCropHeight))
+                {
+                    using (Graphics g = Graphics.FromImage(resizedImage))
+                    {
+                        Rectangle newImageBounds = new Rectangle(leftHandCropX, leftHandCropY, imageCropWidth, imageCropHeight);
+                        g.DrawImage(maniuplatedImage, 0, 0, newImageBounds, GraphicsUnit.Pixel);
+                    }
+
+                    maniuplatedImage = new Bitmap(resizedImage);
+                }
+
+            }
+
+            return maniuplatedImage;
+        }
+
         private int GetHorizontalSlicesPerLevel(int zoomLevel)
         {
             switch (zoomLevel)
             {
+                case 2:
+                    return 1;
                 case 3:
                     return 3; //4 rows; 0,1,2,3
                 case 4:
@@ -195,6 +288,8 @@ namespace Downloader
         {
             switch (zoomLevel)
             {
+                case 2:
+                    return 3;
                 case 3:
                     return 6;
                 case 4:
@@ -204,7 +299,7 @@ namespace Downloader
             }
         }
 
-        public static string zero(int number)
+        public static string Zero(int number)
         {
             if (number < 10)
             {
@@ -212,6 +307,18 @@ namespace Downloader
             }
 
             return number.ToString();
+        }
+
+        public static int Mod(int x, int m)
+        {
+            int r = x % m;
+            return r < 0 ? r + m : r;
+        }
+
+        public static decimal Mod(decimal x, decimal m)
+        {
+            decimal r = x % m;
+            return r < 0 ? r + m : r;
         }
     }
 

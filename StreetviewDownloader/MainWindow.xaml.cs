@@ -26,6 +26,7 @@ namespace StreetviewDownloader
     public partial class MainWindow : Window
     {
         public Dictionary<int, string> keyboardPanoLinkList = new Dictionary<int, string>();
+        public int ZoomLevel = 3;
 
         public MainWindow()
         {
@@ -75,6 +76,14 @@ namespace StreetviewDownloader
                 case Key.NumPad6:
                 case Key.D6:
                     thumbnailKeyPressed(6);
+                    break;
+                case Key.OemPlus:
+                case Key.Add:
+                    ZoomIn_Click(sender, e);
+                    break;
+                case Key.OemMinus:
+                case Key.Subtract:
+                    ZoomOut_Click(sender, e);
                     break;
             }
         }
@@ -131,21 +140,18 @@ namespace StreetviewDownloader
                 locationLabel.Content = "Error: Panorama has invalid XML data...";
                 return;
             }
-            else
-            {
-                DisplayThumbnails(panoObject);
-            }
 
             locationLabel.Content = GetPanoramaLocationText(panoObject);
 
-            int zoomLevel = 3; //This can be edited
-            if (panoObject.data_properties.image_width < 3330 || zoomLevel <= 3)
+            if (panoObject.data_properties.image_width < 3330 && ZoomLevel > 3)
             {
-                zoomLevel = 3; //We're dealing with a low res panorama here
+                ZoomLevel = 3; //We're dealing with a low res panorama here
             }
 
-            System.Drawing.Image image = imageDownloader.GetFullImage(panoId.ToString(), zoomLevel);
-            mainImage.Source = new BitmapImage(new Uri(@"C:\StreetSwoop\cache\" + panoId + @"\3Complete.jpg", UriKind.RelativeOrAbsolute));
+            System.Drawing.Image image = imageDownloader.GetFullImage(panoId.ToString(), ZoomLevel);
+            DisplayThumbnails(panoObject, image);
+
+            mainImage.Source = new BitmapImage(new Uri(@"C:\StreetSwoop\cache\" + panoId + @"\" + ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
 
             //mainImage.Source = ImageConverter(image);
         }
@@ -164,7 +170,7 @@ namespace StreetviewDownloader
             return location;
         }
 
-        private void DisplayThumbnails(panorama panoObject)
+        private void DisplayThumbnails(panorama panoObject, System.Drawing.Image bigImage)
         {
             // Clear previous items
             thumbnails.Children.Clear();
@@ -175,17 +181,26 @@ namespace StreetviewDownloader
             Downloader.Downloader imageDownloader = new Downloader.Downloader(cachePathBase);
 
             int thumbnailKey = 1;
+            decimal panoYaw = panoObject.projection_properties.pano_yaw_deg;
+
+            decimal shrinkFactor = bigImage.Width / 900;
+            System.Drawing.Image smallImage = new System.Drawing.Bitmap(decimal.ToInt32(bigImage.Width / shrinkFactor), decimal.ToInt32(bigImage.Height / shrinkFactor));
+            using (Graphics g = Graphics.FromImage(smallImage))
+            {
+                g.DrawImage(bigImage, 0, 0, smallImage.Width, smallImage.Height);
+            }
 
             // Get all the thumbnails
-            foreach (var annotation in panoObject.annotation_properties)
+            foreach (var annotation in panoObject.annotation_properties.OrderBy(item => item.yaw_deg))
             {
                 var button = new System.Windows.Controls.Button();
                 var thumbImg = new System.Windows.Controls.Image();
 
-                var thumbnail = imageDownloader.GetThumbnail(annotation.pano_id);
+                //headingDelta >= 2 || headingDelta <= -2
+                System.Drawing.Image thumbnail = imageDownloader.ManipulateImage(smallImage, panoYaw, annotation.yaw_deg, 90);
+                
                 thumbImg.Source = ImageConverter(thumbnail);
-                thumbImg.Width = 100;
-                //Img.Height = thumbnail.Height;
+                thumbImg.Width = 125;
 
                 button.Content = thumbImg;
                 button.Click += (object sender, RoutedEventArgs e) =>
@@ -264,6 +279,42 @@ namespace StreetviewDownloader
         {
             decimal r = x % m;
             return r < 0 ? r + m : r;
+        }
+
+        private void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            ZoomOut.IsEnabled = true;
+
+            if (ZoomLevel < 4)
+            {
+                ZoomLevel++;
+            }
+
+            if (ZoomLevel >= 4)
+            {
+                ZoomIn.IsEnabled = false;
+            }
+
+            LabelZoomLevel.Content = ZoomLevel;
+            Button_Click(sender, e);
+        }
+
+        private void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            ZoomIn.IsEnabled = true;
+
+            if (ZoomLevel > 2)
+            {
+                ZoomLevel--;
+            }
+
+            if (ZoomLevel <= 2)
+            {
+                ZoomOut.IsEnabled = false;
+            }
+
+            LabelZoomLevel.Content = ZoomLevel;
+            Button_Click(sender, e);
         }
 
     }

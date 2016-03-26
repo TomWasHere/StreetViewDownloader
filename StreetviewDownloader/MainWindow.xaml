@@ -3,8 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="402.8" Width="701.8">
     <DockPanel LastChildFill="True" >
-        <Border Background="LemonChiffon" BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Bottom">
+        <Border Background="LightGray" BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Bottom" Name="BottomPanel">
             <WrapPanel>
+                <StackPanel Margin="1,3,3,3">
+                    <Button Name="ZoomIn" Content="+" Click="ZoomIn_Click"/>
+                    <Label Name ="LabelZoomLevel" Content="3"/>
+                    <Button Name="ZoomOut" Content="-" Click="ZoomOut_Click"/>
+                </StackPanel>
                 <StackPanel>
                     <WrapPanel Margin="1,3,3,3">
                         <TextBox x:Name="panoIdTextBox" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="28hi5tiRI9Sl6xylktw2TA" VerticalAlignment="Top" Width="170" TextChanged="TextBox_TextChanged_1" />
@@ -22,7 +27,7 @@
                 </StackPanel>
             </WrapPanel>
         </Border>
-        <Border Background="LemonChiffon" BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Top">
+        <Border Background="Black" BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Top">
             <Image x:Name="mainImage" Margin="5,5,5,5" VerticalAlignment="Top" HorizontalAlignment="Left"/>
         </Border>
     </DockPanel>
