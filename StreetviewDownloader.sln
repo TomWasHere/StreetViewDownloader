@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFGUI", "WPFGUI.csproj", "{C1288494-FACF-4392-9369-53C42E743A7D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFGUI", "StreetviewDownloader\WPFGUI.csproj", "{C1288494-FACF-4392-9369-53C42E743A7D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Downloader", "..\Downloader\Downloader.csproj", "{487CC991-71B5-470C-92CF-17E9EBD00F91}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Downloader", "Downloader\Downloader.csproj", "{487CC991-71B5-470C-92CF-17E9EBD00F91}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
