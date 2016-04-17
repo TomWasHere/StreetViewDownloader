@@ -26,7 +26,10 @@ namespace StreetviewDownloader
     public partial class MainWindow : Window
     {
         public Dictionary<int, string> keyboardPanoLinkList = new Dictionary<int, string>();
-        public int ZoomLevel = 3;
+        public int ZoomLevel = 2;
+
+		// All images will be stored here
+		string CachePathBase = Directory.GetCurrentDirectory() + @"\cache\";
 
         public MainWindow()
         {
@@ -95,66 +98,109 @@ namespace StreetviewDownloader
                 string newPanoId = string.Empty;
                 keyboardPanoLinkList.TryGetValue(key, out newPanoId);
                 panoIdTextBox.Text = newPanoId;
-                DownloadBigPano(newPanoId);
+				RetrieveAndDisplayPanorama(newPanoId);
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+		private void ReportProgress(Tuple<int, int, string> value)
+		{
+			ProgressBar.Value = value.Item1;
+			ProgressBar.Maximum = value.Item2;
+			ProgressLabel.Content = value.Item3;
+		}
+
+		private void Button_Click(object sender, RoutedEventArgs e)
         {
             locationLabel.Content = "Loading...";
             string panoId = panoIdTextBox.Text;
 
-            //This should be in a thread
-            DownloadBigPano(panoId);
-
-            
-            //Thread downloaderThread = new Thread(() => DownloadBigPano(panoId));
-            //downloaderThread.Start();
+			RetrieveAndDisplayPanorama(panoId);
         }
 
-        private void DownloadBigPano(string panoId)
+		private async void RetrieveAndDisplayPanorama(string panoId)
+		{
+			// Show progress bar
+			ProgressBar.Visibility = Visibility.Visible;
+			ProgressLabel.Visibility = Visibility.Visible;
+
+			// Holds technical meta information about the pano
+			panorama panoObject = await Task.Run(() =>
+			{
+				return DownloadPanoramaInfo(panoId);
+			});
+
+			if (panoObject.data_properties == null)
+			{
+				locationLabel.Content = "Error: Panorama has invalid XML data...";
+				return;
+			}
+
+			locationLabel.Content = GetPanoramaLocationText(panoObject);
+
+			if (panoObject.data_properties.image_width < 3330 && ZoomLevel > 3)
+			{
+				ZoomLevel = 3; //We're dealing with a low res panorama here
+				LabelZoomLevel.Content = ZoomLevel;
+			}
+
+			// Progress value, max value, status text
+			IProgress<Tuple<int, int, string>> progressIndicator = new Progress<Tuple<int, int, string>>(ReportProgress);
+
+			var image = await Task.Run(() =>
+			{
+				return DownloadBigPano(panoId, progressIndicator);
+			});
+
+			// Download progress complete
+			progressIndicator.Report(new Tuple<int, int, string>(100, 100, "Displaying image..."));
+
+			// Load the image from the cache and display it. This has faster performance than loading it via MemorySteam.
+			mainImage.Source = new BitmapImage(new Uri(CachePathBase + panoId + @"\" + ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
+		
+
+			DisplayThumbnails(panoObject, image);
+
+			// Hide Progress Bar
+			ProgressBar.Visibility = Visibility.Hidden;
+			ProgressLabel.Visibility = Visibility.Hidden;
+		}
+
+		private System.Drawing.Image DownloadBigPano(string panoId, IProgress<Tuple<int, int, string>> progress)
         {
-            //Download the pano
-            string cachePathBase = @"C:\StreetSwoop\cache\";
+			// Start Progress Report
+			progress.Report(new Tuple<int, int, string>(0, 100, "Loading..."));
 
             //Set up downloader...
-            Downloader.Downloader imageDownloader = new Downloader.Downloader(cachePathBase);
+            Downloader.Downloader imageDownloader = new Downloader.Downloader(CachePathBase);
 
-            //Download XML or Load from cache
-            if (!System.IO.File.Exists(cachePathBase + panoId + @"\" + panoId + ".xml"))
-            {
-                if (!System.IO.Directory.Exists(cachePathBase + panoId))
-                {
-                    System.IO.Directory.CreateDirectory(cachePathBase + panoId);
-                }
-                imageDownloader.Download("http://cbk0.google.com/cbk?output=xml&panoid=" + panoId, cachePathBase + panoId + @"\" + panoId + ".xml");
-            }
+			// Download big pano
+			System.Drawing.Image image = imageDownloader.GetFullImage(panoId.ToString(), ZoomLevel, progress);
 
-            XmlSerializer serializer = new XmlSerializer(typeof(panorama));
-            StreamReader reader = new StreamReader(cachePathBase + panoId + @"\" + panoId + ".xml");
-            panorama panoObject = (panorama)serializer.Deserialize(reader);
-            reader.Close();
-
-            if (panoObject.data_properties == null)
-            {
-                locationLabel.Content = "Error: Panorama has invalid XML data...";
-                return;
-            }
-
-            locationLabel.Content = GetPanoramaLocationText(panoObject);
-
-            if (panoObject.data_properties.image_width < 3330 && ZoomLevel > 3)
-            {
-                ZoomLevel = 3; //We're dealing with a low res panorama here
-            }
-
-            System.Drawing.Image image = imageDownloader.GetFullImage(panoId.ToString(), ZoomLevel);
-            DisplayThumbnails(panoObject, image);
-
-            mainImage.Source = new BitmapImage(new Uri(@"C:\StreetSwoop\cache\" + panoId + @"\" + ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
-
-            //mainImage.Source = ImageConverter(image);
+			return image;
         }
+
+		private panorama DownloadPanoramaInfo(string panoId)
+		{
+			//Set up downloader...
+			Downloader.Downloader imageDownloader = new Downloader.Downloader(CachePathBase);
+
+			//Download XML or Load from cache
+			if (!System.IO.File.Exists(CachePathBase + panoId + @"\" + panoId + ".xml"))
+			{
+				if (!System.IO.Directory.Exists(CachePathBase + panoId))
+				{
+					System.IO.Directory.CreateDirectory(CachePathBase + panoId);
+				}
+				imageDownloader.Download("http://cbk0.google.com/cbk?output=xml&panoid=" + panoId, CachePathBase + panoId + @"\" + panoId + ".xml");
+			}
+
+			XmlSerializer serializer = new XmlSerializer(typeof(panorama));
+			StreamReader reader = new StreamReader(CachePathBase + panoId + @"\" + panoId + ".xml");
+			panorama panoObject = (panorama)serializer.Deserialize(reader);
+			reader.Close();
+
+			return panoObject;
+		}
 
         private string GetPanoramaLocationText(panorama panoObject)
         {
@@ -183,8 +229,7 @@ namespace StreetviewDownloader
             int thumbnailKey = 1;
             decimal panoYaw = panoObject.projection_properties.pano_yaw_deg;
 
-            decimal shrinkFactor = bigImage.Width / 900;
-            System.Drawing.Image smallImage = new System.Drawing.Bitmap(decimal.ToInt32(bigImage.Width / shrinkFactor), decimal.ToInt32(bigImage.Height / shrinkFactor));
+            System.Drawing.Image smallImage = new System.Drawing.Bitmap(720, 360);
             using (Graphics g = Graphics.FromImage(smallImage))
             {
                 g.DrawImage(bigImage, 0, 0, smallImage.Width, smallImage.Height);
@@ -205,8 +250,12 @@ namespace StreetviewDownloader
                 button.Content = thumbImg;
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
+					foreach (Button thumbButton in thumbnails.Children) {
+						thumbButton.IsEnabled = false;
+					}
+
                     panoIdTextBox.Text = annotation.pano_id;
-                    DownloadBigPano(annotation.pano_id);
+                    RetrieveAndDisplayPanorama(annotation.pano_id);
                 };
                 thumbnails.Children.Add(button);
 
@@ -316,6 +365,35 @@ namespace StreetviewDownloader
             LabelZoomLevel.Content = ZoomLevel;
             Button_Click(sender, e);
         }
+
+		private void Options_Click(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("You clicked 'Options...'");
+		}
+
+		private void SaveAs_Click(object sender, RoutedEventArgs e)
+		{
+			//Save as dialog box
+			Microsoft.Win32.SaveFileDialog saveDialog = new Microsoft.Win32.SaveFileDialog();
+			saveDialog.FileName = ""; // Default file name
+			saveDialog.DefaultExt = ".jpg"; // Default file extension
+			saveDialog.Filter = "JPG (.jpg)|*.jpg"; // Filter files by extension
+			saveDialog.OverwritePrompt = true;
+
+			// Show save file dialog box
+			Nullable<bool> result = saveDialog.ShowDialog();
+
+			// Process save file dialog box results
+			if (result == true) {
+				// Copy from cache to save file
+				System.IO.File.Copy(CachePathBase + panoIdTextBox.Text + @"\" + ZoomLevel + "Complete.jpg", saveDialog.FileName);
+			}
+		}
+
+		private void Exit_Click(object sender, RoutedEventArgs e)
+		{
+			Application.Current.Shutdown();
+		}
 
     }
 }

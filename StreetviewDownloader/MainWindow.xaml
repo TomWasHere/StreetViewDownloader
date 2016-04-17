@@ -1,14 +1,14 @@
 ﻿<Window x:Class="StreetviewDownloader.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="402.8" Width="701.8">
+        Title="Streetview Downloader" Height="500" Width="850">
     <DockPanel LastChildFill="True" >
         <Border Background="LightGray" BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Bottom" Name="BottomPanel">
             <WrapPanel>
                 <StackPanel Margin="1,3,3,3">
                     <Button Name="ZoomIn" Content="+" Click="ZoomIn_Click"/>
-                    <Label Name ="LabelZoomLevel" Content="3"/>
-                    <Button Name="ZoomOut" Content="-" Click="ZoomOut_Click"/>
+                    <Label Name ="LabelZoomLevel" Content="2"/>
+                    <Button Name="ZoomOut" Content="-" Click="ZoomOut_Click" IsEnabled="False"/>
                 </StackPanel>
                 <StackPanel>
                     <WrapPanel Margin="1,3,3,3">
@@ -17,7 +17,11 @@
                     </WrapPanel>
 
                     <WrapPanel Margin="1,1,1,1">
-                        <Label Name="locationLabel" Content="Location"/>
+                        <Label Name="locationLabel" Content=""/>
+                    </WrapPanel>
+                    <WrapPanel Margin="1,1,1,1">
+                        <ProgressBar Name="ProgressBar" Width="200" Margin="0,5,0,5" Visibility="Hidden"></ProgressBar>
+                        <Label Name="ProgressLabel" Content=""/>
                     </WrapPanel>
                 </StackPanel>
                 <StackPanel >
@@ -28,7 +32,18 @@
             </WrapPanel>
         </Border>
         <Border Background="Black" BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Top">
-            <Image x:Name="mainImage" Margin="5,5,5,5" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+            <StackPanel>
+                <Menu Width="Auto" Height="20">
+                    <MenuItem Header="_File">
+                        <!--<MenuItem Header="_Options..." Click="Options_Click"/>
+                        <Separator />-->
+                        <MenuItem Header="_Save As..." Click="SaveAs_Click"/>
+                        <Separator />
+                        <MenuItem Header="_Exit" Click="Exit_Click"/>
+                    </MenuItem>
+                </Menu>
+                <Image x:Name="mainImage" Margin="5,5,5,5" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+            </StackPanel>
         </Border>
     </DockPanel>
 </Window>

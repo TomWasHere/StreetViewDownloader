@@ -31,7 +31,7 @@ namespace Downloader
         /// <param name="panoId"></param>
         /// <param name="zoomLevel"></param>
         /// <returns></returns>
-        public System.Drawing.Image GetFullImage(string panoId, int zoomLevel)
+		public System.Drawing.Image GetFullImage(string panoId, int zoomLevel, IProgress<Tuple<int, int, string>> progress)
         {
             int horizontalSlices = GetHorizontalSlicesPerLevel(zoomLevel);
             int verticalSlices = GetVerticalSlicesPerLevel(zoomLevel);
@@ -46,8 +46,8 @@ namespace Downloader
             string fullImageName = zoomLevel + "Complete.jpg";
             if (!File.Exists(panoCacheDirectory + fullImageName))
             {
-                DownloadTiles(panoId, zoomLevel);
-                CompileTilesToImage(panoId, zoomLevel, panoCacheDirectory + fullImageName);
+                DownloadTiles(panoId, zoomLevel, progress);
+                CompileTilesToImage(panoId, zoomLevel, panoCacheDirectory + fullImageName, progress);
             }
 
             // The full image is stored in cache
@@ -73,7 +73,7 @@ namespace Downloader
         }
 
         // Compile all tiles into a single image, save the image and clear up cached tiles
-        void CompileTilesToImage(string panoId, int zoomLevel, string savePath)
+		void CompileTilesToImage(string panoId, int zoomLevel, string savePath, IProgress<Tuple<int, int, string>> progress)
         {
             int horizontalSlices = GetHorizontalSlicesPerLevel(zoomLevel);
             int verticalSlices = GetVerticalSlicesPerLevel(zoomLevel);
@@ -119,7 +119,11 @@ namespace Downloader
                             drawX = 0;
                             drawY += 512;
                         }
+
                     }
+					if (progress != null) {
+						progress.Report(new Tuple<int, int, string>(y, horizontalSlices, "Aligning tiles..."));
+					}
                 }
 
                 //Save image to disk
@@ -143,8 +147,12 @@ namespace Downloader
 
         }
 
-        void DownloadTiles(string panoId, int zoomLevel)
+		void DownloadTiles(string panoId, int zoomLevel, IProgress<Tuple<int, int, string>> progress)
         {
+			if (progress != null) {
+				progress.Report(new Tuple<int, int, string>(0, 100, "Downloading..."));
+			}
+
             int horizontalSlices = GetHorizontalSlicesPerLevel(zoomLevel);
             int verticalSlices = GetVerticalSlicesPerLevel(zoomLevel);
 
@@ -174,8 +182,13 @@ namespace Downloader
             }
 
             //Wait for all threads to complete
-            foreach (Thread thread in threads)
-            { thread.Join(); }
+			int threadCounter = 0;
+            foreach (Thread thread in threads){
+				if (progress != null) {
+					progress.Report(new Tuple<int, int, string>(threadCounter++, threads.Count, "Downloading..."));
+				}
+				thread.Join();
+			}
         }
 
         public void Download(string url, string filepath)
@@ -202,7 +215,7 @@ namespace Downloader
             int imageHeight = maniuplatedImage.Height;
             decimal pixelDegreeSize = imageWidth / 360;
 
-            if (originalHeading != desiredHeading)
+            if (originalHeading != desiredHeading && (headingDelta > 2 || headingDelta < -2))
             {
                 //Make the desired heading the new centre of the image
                 decimal headingPixelPosition = (pixelDegreeSize * headingDelta) + (imageWidth / 2);
