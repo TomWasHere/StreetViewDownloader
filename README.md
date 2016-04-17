@@ -7,3 +7,7 @@ Download a combined 360° image from google street view and save to your compute
 ## Download Alpha Version 0.01
 
 [StreetviewDownloader.v0.01.zip](https://github.com/TomWasHere/StreetViewDownloader/releases/download/v0.01/StreetviewDownloader.v0.01.zip)
+
+# FAQ - Where do I find the panoID?
+
+![panoid](https://cloud.githubusercontent.com/assets/5194940/14585179/2cf8eeb8-04bf-11e6-9742-bce10701ab37.jpg)
