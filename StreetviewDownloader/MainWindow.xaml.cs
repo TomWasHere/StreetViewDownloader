@@ -156,9 +156,15 @@ namespace StreetviewDownloader
 
 			// Load the image from the cache and display it. This has faster performance than loading it via MemorySteam.
 			mainImage.Source = new BitmapImage(new Uri(CachePathBase + panoId + @"\" + ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
-		
 
-			DisplayThumbnails(panoObject, image);
+            // Show the image width and height on screen
+            UpdateDimenions(image.Width, image.Height);
+
+            // The Save As... dialog in the file menu
+            FileMenuSaveAs.IsEnabled = true;
+
+            // Show the thumbnail images looking towards linked panoramas
+            DisplayThumbnails(panoObject, image);
 
 			// Hide Progress Bar
 			ProgressBar.Visibility = Visibility.Hidden;
@@ -366,10 +372,22 @@ namespace StreetviewDownloader
             Button_Click(sender, e);
         }
 
-		private void Options_Click(object sender, RoutedEventArgs e)
+		private void OpenFromURL_Click(object sender, RoutedEventArgs e)
 		{
-			MessageBox.Show("You clicked 'Options...'");
-		}
+            // Instantiate window
+            OpenDialog dialogBox = new OpenDialog();
+
+            // Show window modally
+            // NOTE: Returns only when window is closed
+            Nullable<bool> dialogResult = dialogBox.ShowDialog();
+
+            if(dialogResult == true)
+            {
+                panoIdTextBox.Text = dialogBox.PanoId;
+                RetrieveAndDisplayPanorama(panoIdTextBox.Text);
+
+            }
+        }
 
 		private void SaveAs_Click(object sender, RoutedEventArgs e)
 		{
@@ -394,6 +412,12 @@ namespace StreetviewDownloader
 		{
 			Application.Current.Shutdown();
 		}
+
+        private void UpdateDimenions(int width, int height)
+        {
+            string dimensions = width + " x " + height;
+            panoDimensions.Text = dimensions;
+        }
 
     }
 }
