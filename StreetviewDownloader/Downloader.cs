@@ -12,7 +12,7 @@ namespace Downloader
     public class Downloader
     {
         private string CACHE_DIRECTORY_PATH;
-        private bool keepTiles = true;
+        private bool keepTiles = false;
 
         /// <summary>Constructor</summary>
         /// <param name="cacheFilePath">The system file path to the directory to store cached images</param>
