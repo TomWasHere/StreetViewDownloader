@@ -42,6 +42,9 @@
                         <Separator />
                         <MenuItem Header="_Exit" Click="Exit_Click"/>
                     </MenuItem>
+                    <MenuItem Header="_Options">
+                        <MenuItem Header="_Open Cache Folder" Click="OpenCacheFolder_Click"/>
+                    </MenuItem>
                 </Menu>
                 <Image x:Name="mainImage" Margin="5,5,5,5" VerticalAlignment="Top" HorizontalAlignment="Left"/>
             </StackPanel>

@@ -419,5 +419,10 @@ namespace StreetviewDownloader
             panoDimensions.Text = dimensions;
         }
 
+        private void OpenCacheFolder_Click(object sender, RoutedEventArgs e)
+        {
+            System.Diagnostics.Process.Start(CachePathBase);
+        }
+
     }
 }
