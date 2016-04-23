@@ -5,8 +5,6 @@ VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPFGUI", "StreetviewDownloader\WPFGUI.csproj", "{C1288494-FACF-4392-9369-53C42E743A7D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Downloader", "Downloader\Downloader.csproj", "{487CC991-71B5-470C-92CF-17E9EBD00F91}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{C1288494-FACF-4392-9369-53C42E743A7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1288494-FACF-4392-9369-53C42E743A7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1288494-FACF-4392-9369-53C42E743A7D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{487CC991-71B5-470C-92CF-17E9EBD00F91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{487CC991-71B5-470C-92CF-17E9EBD00F91}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{487CC991-71B5-470C-92CF-17E9EBD00F91}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{487CC991-71B5-470C-92CF-17E9EBD00F91}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
