@@ -27,24 +27,17 @@ namespace StreetviewDownloader
     {
         public Dictionary<int, string> keyboardPanoLinkList = new Dictionary<int, string>();
         public int ZoomLevel = 2;
+        private System.Drawing.Image displayedImage;
 
-		// All images will be stored here
-		string CachePathBase = Directory.GetCurrentDirectory() + @"\cache\";
+        private bool continueTimelapse = false;
+
+        // All images will be stored here
+        string CachePathBase = Directory.GetCurrentDirectory() + @"\cache\";
 
         public MainWindow()
         {
             InitializeComponent();
             this.KeyDown += new KeyEventHandler(MainWindow_KeyDown);
-        }
-
-        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-
-        }
-
-        private void TextBox_TextChanged_1(object sender, TextChangedEventArgs e)
-        {
-
         }
 
 
@@ -119,56 +112,78 @@ namespace StreetviewDownloader
 
 		private async void RetrieveAndDisplayPanorama(string panoId)
 		{
-			// Show progress bar
-			ProgressBar.Visibility = Visibility.Visible;
-			ProgressLabel.Visibility = Visibility.Visible;
+            try
+            {
+                // Show progress bar
+                ProgressBar.Visibility = Visibility.Visible;
+                ProgressLabel.Visibility = Visibility.Visible;
 
-			// Holds technical meta information about the pano
-			panorama panoObject = await Task.Run(() =>
-			{
-				return DownloadPanoramaInfo(panoId);
-			});
+                // Holds technical meta information about the pano
+                panorama panoObject = await Task.Run(() =>
+                {
+                    return DownloadPanoramaInfo(panoId);
+                });
 
-			if (panoObject.data_properties == null)
-			{
-				locationLabel.Content = "Error: Panorama has invalid XML data...";
-				return;
-			}
+                if (panoObject.data_properties == null)
+                {
+                    locationLabel.Content = "Error: Panorama has invalid XML data...";
+                    return;
+                }
 
-			locationLabel.Content = GetPanoramaLocationText(panoObject);
+                locationLabel.Content = GetPanoramaLocationText(panoObject);
 
-			if (panoObject.data_properties.image_width < 3330 && ZoomLevel > 3)
-			{
-				ZoomLevel = 3; //We're dealing with a low res panorama here
-				LabelZoomLevel.Content = ZoomLevel;
-			}
+                if (panoObject.data_properties.image_width < 3330 && ZoomLevel > 3)
+                {
+                    ZoomLevel = 3; //We're dealing with a low res panorama here
+                    LabelZoomLevel.Content = ZoomLevel;
+                }
 
-			// Progress value, max value, status text
-			IProgress<Tuple<int, int, string>> progressIndicator = new Progress<Tuple<int, int, string>>(ReportProgress);
+                // Progress value, max value, status text
+                IProgress<Tuple<int, int, string>> progressIndicator = new Progress<Tuple<int, int, string>>(ReportProgress);
 
-			var image = await Task.Run(() =>
-			{
-				return DownloadBigPano(panoId, progressIndicator);
-			});
+                var image = await Task.Run(() =>
+                {
+                    return DownloadBigPano(panoId, progressIndicator);
+                });
 
-			// Download progress complete
-			progressIndicator.Report(new Tuple<int, int, string>(100, 100, "Displaying image..."));
+                // Show the image width and height on screen
+                UpdateDimenions(image.Width, image.Height);
 
-			// Load the image from the cache and display it. This has faster performance than loading it via MemorySteam.
-			mainImage.Source = new BitmapImage(new Uri(CachePathBase + panoId + @"\" + ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
+                // Download progress complete
+                progressIndicator.Report(new Tuple<int, int, string>(0, 100, "Displaying image..."));
 
-            // Show the image width and height on screen
-            UpdateDimenions(image.Width, image.Height);
+                if (sliderFieldOfView.Value == 360)
+                {
+                    // Load the image from the cache and display it. This has faster performance than loading it via MemorySteam.
+                    mainImage.Source = new BitmapImage(new Uri(CachePathBase + panoId + @"\" + ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
+                    displayedImage = image;
+                }
+                else
+                {
+                    Downloader.Downloader imageDownloader = new Downloader.Downloader(CachePathBase);
+                    var manipulatedImage = imageDownloader.ManipulateImage(image, 0, 0, (int)sliderFieldOfView.Value);
+                    mainImage.Source = ImageConverter(manipulatedImage);
+                    // Show the image width and height on screen
+                    UpdateDimenions(manipulatedImage.Width, manipulatedImage.Height);
+                    displayedImage = manipulatedImage;
+                }
 
-            // The Save As... dialog in the file menu
-            FileMenuSaveAs.IsEnabled = true;
+                progressIndicator.Report(new Tuple<int, int, string>(100, 100, "Displaying image..."));
 
-            // Show the thumbnail images looking towards linked panoramas
-            DisplayThumbnails(panoObject, image);
+                // The Save As... dialog in the file menu
+                FileMenuSaveAs.IsEnabled = true;
+                FileMenuTimelapse.IsEnabled = true;
 
-			// Hide Progress Bar
-			ProgressBar.Visibility = Visibility.Hidden;
-			ProgressLabel.Visibility = Visibility.Hidden;
+                // Show the thumbnail images looking towards linked panoramas
+                DisplayThumbnails(panoObject, image);
+
+                // Hide Progress Bar
+                ProgressBar.Visibility = Visibility.Hidden;
+                ProgressLabel.Visibility = Visibility.Hidden;
+            } catch (Exception e)
+            {
+                MessageBox.Show(e.Message + Environment.NewLine + e.InnerException, "An error occured downloading the image");
+            }
 		}
 
 		private System.Drawing.Image DownloadBigPano(string panoId, IProgress<Tuple<int, int, string>> progress)
@@ -191,7 +206,7 @@ namespace StreetviewDownloader
 			Downloader.Downloader imageDownloader = new Downloader.Downloader(CachePathBase);
 
 			//Download XML or Load from cache
-			if (!System.IO.File.Exists(CachePathBase + panoId + @"\" + panoId + ".xml"))
+			if (!System.IO.File.Exists(CachePathBase + panoId + @"\" + panoId + ".xml") || new FileInfo(CachePathBase + panoId + @"\" + panoId + ".xml").Length == 0)
 			{
 				if (!System.IO.Directory.Exists(CachePathBase + panoId))
 				{
@@ -403,8 +418,7 @@ namespace StreetviewDownloader
 
 			// Process save file dialog box results
 			if (result == true) {
-				// Copy from cache to save file
-				System.IO.File.Copy(CachePathBase + panoIdTextBox.Text + @"\" + ZoomLevel + "Complete.jpg", saveDialog.FileName);
+                displayedImage.Save(saveDialog.FileName, System.Drawing.Imaging.ImageFormat.Jpeg);
 			}
 		}
 
@@ -423,6 +437,73 @@ namespace StreetviewDownloader
         {
             System.Diagnostics.Process.Start(CachePathBase);
         }
+
+        private void CreateTimelapse_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("The timelapser is a work in progress. Create a new folder in the next popup and give the timelapse files a name. They will have an incrementing number added into the file name you choose eg. Timelapse.jpg will save as Timelapse001.jpg, Timelapse002.jpg... etc", "Timelapse Instructions");
+
+
+            //Save as dialog box
+            Microsoft.Win32.SaveFileDialog saveDialog = new Microsoft.Win32.SaveFileDialog();
+            saveDialog.FileName = "StreetviewTimelapse"; // Default file name
+            saveDialog.DefaultExt = ".jpg"; // Default file extension
+            saveDialog.Filter = "JPG (.jpg)|*.jpg"; // Filter files by extension
+            saveDialog.OverwritePrompt = true;
+            saveDialog.Title = "Time lapse files will be saved here with the provided name";
+
+            // Show save file dialog box
+            Nullable<bool> result = saveDialog.ShowDialog();
+
+            if (result == true)
+            {
+                string saveFilePath = saveDialog.FileName;
+                saveFilePath = saveFilePath.Substring(0, saveFilePath.Length - 3); // remove file extension
+                TimeLapse(saveFilePath, panoIdTextBox.Text);
+            }
+        }
+
+        private async void TimeLapse(string fileSavePath, string startPanoId)
+        {
+            int timelapseFileCounter = 1;
+            continueTimelapse = true;
+            string nextPanoId = startPanoId;
+
+            try
+            {
+                while (continueTimelapse)
+                {
+                    // Get the pano info to find linked panoramas
+                    panorama panoObject = await Task.Run(() =>
+                    {
+                        return DownloadPanoramaInfo(nextPanoId);
+                    });
+
+                    if (panoObject.annotation_properties.Length > 0)
+                    {
+                        // Just pick the first linked pano, TODO : make this user selectable
+                        nextPanoId = panoObject.annotation_properties.OrderBy(item => item.yaw_deg).First().pano_id;
+                    } else
+                    {
+                        //No linked panoramas (it can happen)
+                        continueTimelapse = false;
+                        break;
+                    }
+
+                    RetrieveAndDisplayPanorama(nextPanoId);
+
+                    Thread.Sleep(200);
+
+                    // Save the current image
+                    displayedImage.Save(fileSavePath + fiveZero(timelapseFileCounter++) + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                }
+
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + Environment.NewLine + e.InnerException, "An error occured creating timelapse images");
+            }
+        }
+
 
     }
 }
