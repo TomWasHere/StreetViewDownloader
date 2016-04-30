@@ -12,7 +12,7 @@ namespace Downloader
     public class Downloader
     {
         private string CACHE_DIRECTORY_PATH;
-        private bool keepTiles = false;
+        public bool KeepTiles = false;
 
         /// <summary>Constructor</summary>
         /// <param name="cacheFilePath">The system file path to the directory to store cached images</param>
@@ -120,6 +120,9 @@ namespace Downloader
                             drawY += 512;
                         }
 
+                        // We no longer need to hold this file open
+                        tile.Dispose();
+
                     }
 					if (progress != null) {
 						progress.Report(new Tuple<int, int, string>(y, horizontalSlices, "Aligning tiles..."));
@@ -131,12 +134,12 @@ namespace Downloader
             }
 
             // Clean up the tiles
-            if (!keepTiles) { 
+            if (!KeepTiles) { 
                 for (int y = 0; y <= horizontalSlices; y++)
                 {
                     for (int x = 0; x <= verticalSlices; x++)
                     {
-                        string cacheName = zoomLevel + Zero(y) + Zero(x) + ".jpg";
+                        string cacheName = panoId + @"\" + zoomLevel + Zero(y) + Zero(x) + ".jpg";
                         if (File.Exists(CACHE_DIRECTORY_PATH + cacheName))
                         {
                             File.Delete(CACHE_DIRECTORY_PATH + cacheName);
