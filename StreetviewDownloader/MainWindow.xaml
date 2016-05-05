@@ -1,34 +1,34 @@
-﻿<Window x:Class="StreetviewDownloader.MainWindow"
+﻿<Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:StreetviewDownloader" x:Class="StreetviewDownloader.MainWindow"
         Title="Streetview Downloader" Height="500" Width="850">
-    <DockPanel LastChildFill="True" >
-        <Border Background="LightGray" BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Bottom" Name="BottomPanel">
+
+    <DockPanel LastChildFill="True">
+        <Border Background="LightGray" BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Bottom" x:Name="BottomPanel">
             <WrapPanel>
                 <StackPanel Margin="1,3,3,3">
-                    <Button Name="ZoomIn" Content="+" Click="ZoomIn_Click"/>
-                    <Label Name ="LabelZoomLevel" Content="2"/>
-                    <Button Name="ZoomOut" Content="-" Click="ZoomOut_Click" IsEnabled="False"/>
+                    <Button x:Name="ZoomIn" Content="+" Click="ZoomIn_Click"/>
+                    <Label x:Name="LabelZoomLevel" Content="{Binding Path=ZoomLevel, Mode=TwoWay}"/>
+                    <Button x:Name="ZoomOut" Content="-" Click="ZoomOut_Click" IsEnabled="False"/>
                 </StackPanel>
                 <StackPanel>
                     <WrapPanel Margin="1,3,3,3">
-                        <TextBox x:Name="panoIdTextBox" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="28hi5tiRI9Sl6xylktw2TA" VerticalAlignment="Top" Width="170" />
-                        <Button Content="Refresh" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Click="Button_Click" />
-                        <TextBlock Name="panoDimensions" Margin="5,1,1,1"/>
+                        <TextBox x:Name="panoIdTextBox" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="{Binding PanoID}" VerticalAlignment="Top" Width="170" />
+                        <Button Content="Refresh" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Click="RefreshButton_Click" />
+                        <TextBlock Text="{Binding PanoDimentions}" Margin="5,1,1,1"/>
                     </WrapPanel>
 
                     <WrapPanel Margin="1,1,1,1">
-                        <Label Name="locationLabel" Content=""/>
+                        <Label x:Name="locationLabel" Content="{Binding Location}"/>
                     </WrapPanel>
                     <WrapPanel Margin="1,1,1,1">
-                        <ProgressBar Name="ProgressBar" Width="200" Margin="0,5,0,5" Visibility="Hidden"></ProgressBar>
-                        <Label Name="ProgressLabel" Content=""/>
+                        <ProgressBar x:Name="ProgressBar" Value="{Binding ProgressBarValue}" Maximum="{Binding ProgressBarMaximum}" Width="200" Margin="0,5,0,5" Visibility="{Binding ProgressBarVisibility}"/>
+                        <Label x:Name="ProgressLabel" Content="{Binding ProgressBarLabel}" Visibility="{Binding ProgressBarVisibility}"/>
                     </WrapPanel>
                 </StackPanel>
                 <StackPanel >
-                    <WrapPanel Margin="5,5,5,5" x:Name="thumbnails">
-
-                    </WrapPanel>
+                    <WrapPanel Margin="5,5,5,5" x:Name="thumbnails"/>
                 </StackPanel>
             </WrapPanel>
         </Border>
@@ -38,8 +38,8 @@
                     <MenuItem Header="_File">
                         <MenuItem Header="_Open from URL..." Click="OpenFromURL_Click"/>
                         <Separator />
-                        <MenuItem Header="_Save As..." Click="SaveAs_Click" IsEnabled="False" Name="FileMenuSaveAs"/>
-                        <MenuItem Header="_Create Timelapse..." Click="CreateTimelapse_Click" IsEnabled="False" Name="FileMenuTimelapse"/>
+                        <MenuItem Header="_Save As..." Click="SaveAs_Click" IsEnabled="{Binding FileMenuSaveAsEnabled}" x:Name="FileMenuSaveAs"/>
+                        <MenuItem Header="_Create Timelapse..." Click="CreateTimelapse_Click" IsEnabled="{Binding FileMenuTimelapseEnabled}" x:Name="FileMenuTimelapse"/>
                         <Separator />
                         <MenuItem Header="_Exit" Click="Exit_Click"/>
                     </MenuItem>
@@ -47,8 +47,8 @@
                         <MenuItem Header="_Open Cache Folder" Click="OpenCacheFolder_Click"/>
                         <MenuItem Header="Field of view" Margin="0,0,0,0">
                             <WrapPanel>
-                                <Slider Name="sliderFieldOfView" Value="360" Minimum="90" Maximum="360" Width="190" TickPlacement="BottomRight" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,0,0,0"/>
-                                <Label Content="{Binding ElementName=sliderFieldOfView, Path=Value, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Slider x:Name="sliderFieldOfView" Value="{Binding FieldOfView}" Minimum="90" Maximum="360" Width="190" TickPlacement="BottomRight" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,0,0,0"/>
+                                <Label Content="{Binding Value, ElementName=sliderFieldOfView, UpdateSourceTrigger=PropertyChanged}"/>
                                 <Label Content="°" Margin="-10,0,0,0"/>
                             </WrapPanel>
                         </MenuItem>
@@ -57,7 +57,7 @@
                         <MenuItem Header="_Streetview Downloader v0.01"/>
                     </MenuItem>
                 </Menu>
-                <Image x:Name="mainImage" Margin="5,5,5,5" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                <Image x:Name="mainImage"  Source="{Binding MainImageSource}" Margin="5,5,5,5" VerticalAlignment="Top" HorizontalAlignment="Left"/>
             </StackPanel>
         </Border>
     </DockPanel>

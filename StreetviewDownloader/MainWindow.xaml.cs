@@ -26,18 +26,19 @@ namespace StreetviewDownloader
     public partial class MainWindow : Window
     {
         public Dictionary<int, string> keyboardPanoLinkList = new Dictionary<int, string>();
-        public int ZoomLevel = 2;
+        
         private System.Drawing.Image displayedImage;
 
         private bool continueTimelapse = false;
 
-        // All images will be stored here
-        string CachePathBase = Directory.GetCurrentDirectory() + @"\cache\";
+        StreetviewDownloaderModel _model;
 
         public MainWindow()
         {
             InitializeComponent();
             this.KeyDown += new KeyEventHandler(MainWindow_KeyDown);
+            _model = new StreetviewDownloaderModel();
+            this.DataContext = _model;
         }
 
 
@@ -51,27 +52,27 @@ namespace StreetviewDownloader
             switch (e.Key){
                 case Key.NumPad1:
                 case Key.D1:
-                    thumbnailKeyPressed(1);
+                    ThumbnailKeyPressed(1);
                     break;
                 case Key.NumPad2:
                 case Key.D2:
-                    thumbnailKeyPressed(2);
+                    ThumbnailKeyPressed(2);
                     break;
                 case Key.NumPad3:
                 case Key.D3:
-                    thumbnailKeyPressed(3);
+                    ThumbnailKeyPressed(3);
                     break;
                 case Key.NumPad4:
                 case Key.D4:
-                    thumbnailKeyPressed(4);
+                    ThumbnailKeyPressed(4);
                     break;
                 case Key.NumPad5:
                 case Key.D5:
-                    thumbnailKeyPressed(5);
+                    ThumbnailKeyPressed(5);
                     break;
                 case Key.NumPad6:
                 case Key.D6:
-                    thumbnailKeyPressed(6);
+                    ThumbnailKeyPressed(6);
                     break;
                 case Key.OemPlus:
                 case Key.Add:
@@ -84,30 +85,29 @@ namespace StreetviewDownloader
             }
         }
 
-        private void thumbnailKeyPressed(int key)
+        private void ThumbnailKeyPressed(int key)
         {
             if (keyboardPanoLinkList.ContainsKey(key))
             {
                 string newPanoId = string.Empty;
                 keyboardPanoLinkList.TryGetValue(key, out newPanoId);
-                panoIdTextBox.Text = newPanoId;
+                _model.PanoID = newPanoId;
 				RetrieveAndDisplayPanorama(newPanoId);
             }
         }
 
 		private void ReportProgress(Tuple<int, int, string> value)
 		{
-			ProgressBar.Value = value.Item1;
-			ProgressBar.Maximum = value.Item2;
-			ProgressLabel.Content = value.Item3;
+			_model.ProgressBarValue = value.Item1;
+			_model.ProgressBarMaximum = value.Item2;
+			_model.ProgressBarLabel = value.Item3;
 		}
 
-		private void Button_Click(object sender, RoutedEventArgs e)
+		private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            locationLabel.Content = "Loading...";
-            string panoId = panoIdTextBox.Text;
+            _model.Location = "Loading...";
 
-			RetrieveAndDisplayPanorama(panoId);
+			RetrieveAndDisplayPanorama(_model.PanoID);
         }
 
 		private async void RetrieveAndDisplayPanorama(string panoId)
@@ -115,27 +115,25 @@ namespace StreetviewDownloader
             try
             {
                 // Show progress bar
-                ProgressBar.Visibility = Visibility.Visible;
-                ProgressLabel.Visibility = Visibility.Visible;
+                _model.ProgressBarVisibility = Visibility.Visible;
 
                 // Holds technical meta information about the pano
                 panorama panoObject = await Task.Run(() =>
                 {
-                    return DownloadPanoramaInfo(panoId);
+                    return _model.DownloadPanoramaInfo(panoId);
                 });
 
                 if (panoObject.data_properties == null)
                 {
-                    locationLabel.Content = "Error: Panorama has invalid XML data...";
+					_model.Location = "Error: Panorama has invalid XML data...";
                     return;
                 }
 
-                locationLabel.Content = GetPanoramaLocationText(panoObject);
+				_model.Location = GetPanoramaLocationText(panoObject);
 
-                if (panoObject.data_properties.image_width < 3330 && ZoomLevel > 3)
+                if (panoObject.data_properties.image_width < 3330 && _model.ZoomLevel > 3)
                 {
-                    ZoomLevel = 3; //We're dealing with a low res panorama here
-                    LabelZoomLevel.Content = ZoomLevel;
+                    _model.ZoomLevel = 3; //We're dealing with a low res panorama here
                 }
 
                 // Progress value, max value, status text
@@ -152,17 +150,17 @@ namespace StreetviewDownloader
                 // Download progress complete
                 progressIndicator.Report(new Tuple<int, int, string>(0, 100, "Displaying image..."));
 
-                if (sliderFieldOfView.Value == 360)
+                if (_model.FieldOfView == 360)
                 {
                     // Load the image from the cache and display it. This has faster performance than loading it via MemorySteam.
-                    mainImage.Source = new BitmapImage(new Uri(CachePathBase + panoId + @"\" + ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
+                    _model.MainImageSource = new BitmapImage(new Uri(_model.CachePathBase + panoId + @"\" + _model.ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
                     displayedImage = image;
                 }
                 else
                 {
-                    Downloader.Downloader imageDownloader = new Downloader.Downloader(CachePathBase);
-                    var manipulatedImage = imageDownloader.ManipulateImage(image, 0, 0, (int)sliderFieldOfView.Value);
-                    mainImage.Source = ImageConverter(manipulatedImage);
+                    Downloader.Downloader imageDownloader = new Downloader.Downloader(_model.CachePathBase);
+                    var manipulatedImage = imageDownloader.ManipulateImage(image, 0, 0, _model.FieldOfView);
+					_model.MainImageSource = ImageConverter(manipulatedImage);
                     // Show the image width and height on screen
                     UpdateDimenions(manipulatedImage.Width, manipulatedImage.Height);
                     displayedImage = manipulatedImage;
@@ -171,15 +169,16 @@ namespace StreetviewDownloader
                 progressIndicator.Report(new Tuple<int, int, string>(100, 100, "Displaying image..."));
 
                 // The Save As... dialog in the file menu
-                FileMenuSaveAs.IsEnabled = true;
-                FileMenuTimelapse.IsEnabled = true;
+                _model.FileMenuSaveAsEnabled = true;
+                _model.FileMenuTimelapseEnabled = true;
 
-                // Show the thumbnail images looking towards linked panoramas
-                DisplayThumbnails(panoObject, image);
+				// Show the thumbnail images looking towards linked panoramas
+				if (!continueTimelapse) {
+					DisplayThumbnails(panoObject, image);
+				}
 
                 // Hide Progress Bar
-                ProgressBar.Visibility = Visibility.Hidden;
-                ProgressLabel.Visibility = Visibility.Hidden;
+                _model.ProgressBarVisibility = Visibility.Hidden;
             } catch (Exception e)
             {
                 MessageBox.Show(e.Message + Environment.NewLine + e.InnerException, "An error occured downloading the image");
@@ -192,36 +191,15 @@ namespace StreetviewDownloader
 			progress.Report(new Tuple<int, int, string>(0, 100, "Loading..."));
 
             //Set up downloader...
-            Downloader.Downloader imageDownloader = new Downloader.Downloader(CachePathBase);
+            Downloader.Downloader imageDownloader = new Downloader.Downloader(_model.CachePathBase);
 
 			// Download big pano
-			System.Drawing.Image image = imageDownloader.GetFullImage(panoId.ToString(), ZoomLevel, progress);
+			System.Drawing.Image image = imageDownloader.GetFullImage(panoId.ToString(), _model.ZoomLevel, progress);
 
 			return image;
         }
 
-		private panorama DownloadPanoramaInfo(string panoId)
-		{
-			//Set up downloader...
-			Downloader.Downloader imageDownloader = new Downloader.Downloader(CachePathBase);
 
-			//Download XML or Load from cache
-			if (!System.IO.File.Exists(CachePathBase + panoId + @"\" + panoId + ".xml") || new FileInfo(CachePathBase + panoId + @"\" + panoId + ".xml").Length == 0)
-			{
-				if (!System.IO.Directory.Exists(CachePathBase + panoId))
-				{
-					System.IO.Directory.CreateDirectory(CachePathBase + panoId);
-				}
-				imageDownloader.Download("http://cbk0.google.com/cbk?output=xml&panoid=" + panoId, CachePathBase + panoId + @"\" + panoId + ".xml");
-			}
-
-			XmlSerializer serializer = new XmlSerializer(typeof(panorama));
-			StreamReader reader = new StreamReader(CachePathBase + panoId + @"\" + panoId + ".xml");
-			panorama panoObject = (panorama)serializer.Deserialize(reader);
-			reader.Close();
-
-			return panoObject;
-		}
 
         private string GetPanoramaLocationText(panorama panoObject)
         {
@@ -244,8 +222,7 @@ namespace StreetviewDownloader
             keyboardPanoLinkList.Clear();
 
             //Set up downloader...
-            string cachePathBase = @"C:\StreetSwoop\cache\";
-            Downloader.Downloader imageDownloader = new Downloader.Downloader(cachePathBase);
+            Downloader.Downloader imageDownloader = new Downloader.Downloader(_model.CachePathBase);
 
             int thumbnailKey = 1;
             decimal panoYaw = panoObject.projection_properties.pano_yaw_deg;
@@ -275,7 +252,7 @@ namespace StreetviewDownloader
 						thumbButton.IsEnabled = false;
 					}
 
-                    panoIdTextBox.Text = annotation.pano_id;
+                    _model.PanoID = annotation.pano_id;
                     RetrieveAndDisplayPanorama(annotation.pano_id);
                 };
                 thumbnails.Children.Add(button);
@@ -300,7 +277,7 @@ namespace StreetviewDownloader
             return bi;
         }
 
-        public static string zero(int number)
+        public static string Zero(int number)
         {
             if (number < 10)
             {
@@ -310,7 +287,7 @@ namespace StreetviewDownloader
             return number.ToString();
         }
 
-        public static string fiveZero(int number)
+        public static string FiveZero(int number)
         {
             if (number < 10)
             {
@@ -339,13 +316,13 @@ namespace StreetviewDownloader
             return r.Replace(filename, replaceChar);
         }
 
-        public static int mod(int x, int m)
+        public static int Mod(int x, int m)
         {
             int r = x % m;
             return r < 0 ? r + m : r;
         }
 
-        public static decimal mod(decimal x, decimal m)
+        public static decimal Mod(decimal x, decimal m)
         {
             decimal r = x % m;
             return r < 0 ? r + m : r;
@@ -355,36 +332,34 @@ namespace StreetviewDownloader
         {
             ZoomOut.IsEnabled = true;
 
-            if (ZoomLevel < 4)
+            if (_model.ZoomLevel < 4)
             {
-                ZoomLevel++;
+                _model.ZoomLevel++;
             }
 
-            if (ZoomLevel >= 4)
+            if (_model.ZoomLevel >= 4)
             {
                 ZoomIn.IsEnabled = false;
             }
 
-            LabelZoomLevel.Content = ZoomLevel;
-            Button_Click(sender, e);
+            RefreshButton_Click(sender, e);
         }
 
         private void ZoomOut_Click(object sender, RoutedEventArgs e)
         {
             ZoomIn.IsEnabled = true;
 
-            if (ZoomLevel > 2)
+            if (_model.ZoomLevel > 2)
             {
-                ZoomLevel--;
+                _model.ZoomLevel--;
             }
 
-            if (ZoomLevel <= 2)
+            if (_model.ZoomLevel <= 2)
             {
                 ZoomOut.IsEnabled = false;
             }
-
-            LabelZoomLevel.Content = ZoomLevel;
-            Button_Click(sender, e);
+			
+            RefreshButton_Click(sender, e);
         }
 
 		private void OpenFromURL_Click(object sender, RoutedEventArgs e)
@@ -398,8 +373,8 @@ namespace StreetviewDownloader
 
             if(dialogResult == true)
             {
-                panoIdTextBox.Text = dialogBox.PanoId;
-                RetrieveAndDisplayPanorama(panoIdTextBox.Text);
+                _model.PanoID = dialogBox.PanoId;
+                RetrieveAndDisplayPanorama(_model.PanoID);
 
             }
         }
@@ -430,12 +405,12 @@ namespace StreetviewDownloader
         private void UpdateDimenions(int width, int height)
         {
             string dimensions = width + " x " + height;
-            panoDimensions.Text = dimensions;
+			_model.PanoDimentions = dimensions;
         }
 
         private void OpenCacheFolder_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start(CachePathBase);
+            System.Diagnostics.Process.Start(_model.CachePathBase);
         }
 
         private void CreateTimelapse_Click(object sender, RoutedEventArgs e)
@@ -458,7 +433,7 @@ namespace StreetviewDownloader
             {
                 string saveFilePath = saveDialog.FileName;
                 saveFilePath = saveFilePath.Substring(0, saveFilePath.Length - 3); // remove file extension
-                TimeLapse(saveFilePath, panoIdTextBox.Text);
+                TimeLapse(saveFilePath, _model.PanoID);
             }
         }
 
@@ -472,13 +447,14 @@ namespace StreetviewDownloader
             {
                 while (continueTimelapse)
                 {
-                    // Get the pano info to find linked panoramas
-                    panorama panoObject = await Task.Run(() =>
-                    {
-                        return DownloadPanoramaInfo(nextPanoId);
-                    });
+					// Get the pano info to find linked panoramas
+					//panorama panoObject = await Task.Run(() =>
+					//{
+					//    return _model.DownloadPanoramaInfo(nextPanoId);
+					//});
+					panorama panoObject = _model.DownloadPanoramaInfo(nextPanoId);
 
-                    if (panoObject.annotation_properties.Length > 0)
+					if (panoObject.annotation_properties.Length > 0)
                     {
                         // Just pick the first linked pano, TODO : make this user selectable
                         nextPanoId = panoObject.annotation_properties.OrderBy(item => item.yaw_deg).First().pano_id;
@@ -489,12 +465,16 @@ namespace StreetviewDownloader
                         break;
                     }
 
-                    RetrieveAndDisplayPanorama(nextPanoId);
+					//await Task.Run(() =>
+					//{
+					//	RetrieveAndDisplayPanorama(nextPanoId);
+					//});
 
-                    Thread.Sleep(200);
+					var uiContext = TaskScheduler.FromCurrentSynchronizationContext();
+					await Task.Factory.StartNew(() => { RetrieveAndDisplayPanorama(nextPanoId); }, CancellationToken.None, TaskCreationOptions.None, uiContext);
 
-                    // Save the current image
-                    displayedImage.Save(fileSavePath + fiveZero(timelapseFileCounter++) + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+					// Save the current image
+					displayedImage.Save(fileSavePath + FiveZero(timelapseFileCounter++) + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
                 }
 
             }
