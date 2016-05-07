@@ -37,7 +37,7 @@ namespace StreetviewDownloader {
 		public string ProgressBarLabel { get { return _progressBarLabel; } set { _progressBarLabel = value; RaisePropertyChanged("ProgressBarLabel"); } }
 
 		private int _fieldOfView;
-		public int FieldOfView {  get { return _fieldOfView; } set { _fieldOfView = value; RaisePropertyChanged("FieldOfView"); } }
+		public int FieldOfView { get { return _fieldOfView; } set { _fieldOfView = value; RaisePropertyChanged("FieldOfView"); } }
 
 		private bool _saveAsEnabled;
 		public bool FileMenuSaveAsEnabled { get { return _saveAsEnabled; } set { _saveAsEnabled = value; RaisePropertyChanged("FileMenuSaveAsEnabled"); } }
