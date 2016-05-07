@@ -3,20 +3,13 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Xml.Serialization;
 
 namespace StreetviewDownloader {
 	/// <summary>
@@ -102,6 +95,10 @@ namespace StreetviewDownloader {
 		}
 
 		private async void RetrieveAndDisplayPanorama(string panoId) {
+			await RetrieveAndDisplayPanoramaAsync(panoId);
+		}
+
+		private async Task RetrieveAndDisplayPanoramaAsync(string panoId) {
 			try {
 				// Show progress bar
 				_model.ProgressBarVisibility = Visibility.Visible;
@@ -386,23 +383,26 @@ namespace StreetviewDownloader {
 
 			if (result == true) {
 				string saveFilePath = saveDialog.FileName;
-				saveFilePath = saveFilePath.Substring(0, saveFilePath.Length - 3); // remove file extension
-				TimeLapse(saveFilePath, _model.PanoID);
+				saveFilePath = saveFilePath.Substring(0, saveFilePath.Length - 4); // remove file extension
+				TimeLapseAsync(saveFilePath, _model.PanoID);
 			}
 		}
 
-		private async void TimeLapse(string fileSavePath, string startPanoId) {
+		private async void TimeLapseAsync(string fileSavePath, string startPanoId) {
 			int timelapseFileCounter = 1;
 			continueTimelapse = true;
+			_model.StopTimelapseVisibility = Visibility.Visible;
 			string nextPanoId = startPanoId;
 
 			try {
 				while (continueTimelapse) {
+					Task retrievePanoramaTask = RetrieveAndDisplayPanoramaAsync(nextPanoId);
+					await retrievePanoramaTask;
+
+					// Save the current image
+					displayedImage.Save(fileSavePath + FiveZero(timelapseFileCounter++) + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+
 					// Get the pano info to find linked panoramas
-					//panorama panoObject = await Task.Run(() =>
-					//{
-					//    return _model.DownloadPanoramaInfo(nextPanoId);
-					//});
 					panorama panoObject = _model.DownloadPanoramaInfo(nextPanoId);
 
 					if (panoObject.annotation_properties.Length > 0) {
@@ -414,16 +414,6 @@ namespace StreetviewDownloader {
 						break;
 					}
 
-					//await Task.Run(() =>
-					//{
-					//	RetrieveAndDisplayPanorama(nextPanoId);
-					//});
-
-					var uiContext = TaskScheduler.FromCurrentSynchronizationContext();
-					await Task.Factory.StartNew(() => { RetrieveAndDisplayPanorama(nextPanoId); }, CancellationToken.None, TaskCreationOptions.None, uiContext);
-
-					// Save the current image
-					displayedImage.Save(fileSavePath + FiveZero(timelapseFileCounter++) + ".jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
 				}
 
 			} catch (Exception e) {
@@ -431,6 +421,9 @@ namespace StreetviewDownloader {
 			}
 		}
 
-
+		private void StopTimelapse_Click(object sender, RoutedEventArgs e) {
+			continueTimelapse = false;
+			_model.StopTimelapseVisibility = Visibility.Hidden;
+		}
 	}
 }

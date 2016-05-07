@@ -48,6 +48,9 @@ namespace StreetviewDownloader {
 		private System.Windows.Media.ImageSource _mainImageSource;
 		public System.Windows.Media.ImageSource MainImageSource { get { return _mainImageSource; } set { _mainImageSource = value; RaisePropertyChanged("MainImageSource"); } }
 
+		private System.Windows.Visibility _stopTimelapseVisibility;
+		public System.Windows.Visibility StopTimelapseVisibility { get { return _stopTimelapseVisibility; } set { _stopTimelapseVisibility = value; RaisePropertyChanged("StopTimelapseVisibility"); } }
+
 		public StreetviewDownloaderModel() {
 			ZoomLevel = 2;
 			PanoID = "28hi5tiRI9Sl6xylktw2TA";
@@ -56,6 +59,7 @@ namespace StreetviewDownloader {
 
 			FileMenuSaveAsEnabled = false;
 			FileMenuTimelapseEnabled = false;
+			StopTimelapseVisibility = System.Windows.Visibility.Hidden;
 		}
 
 

@@ -17,6 +17,7 @@
                         <TextBox x:Name="panoIdTextBox" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="{Binding PanoID}" VerticalAlignment="Top" Width="170" />
                         <Button Content="Refresh" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Click="RefreshButton_Click" />
                         <TextBlock Text="{Binding PanoDimentions}" Margin="5,1,1,1"/>
+                        <Button Content="Stop Timelapse" Click="StopTimelapse_Click" Visibility="{Binding StopTimelapseVisibility}"/>
                     </WrapPanel>
 
                     <WrapPanel Margin="1,1,1,1">
