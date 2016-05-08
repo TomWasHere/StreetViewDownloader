@@ -134,18 +134,19 @@ namespace StreetviewDownloader {
 				// Download progress complete
 				progressIndicator.Report(new Tuple<int, int, string>(0, 100, "Displaying image..."));
 
-				if (_model.FieldOfView == 360) {
-					// Load the image from the cache and display it. This has faster performance than loading it via MemorySteam.
-					_model.MainImageSource = new BitmapImage(new Uri(_model.CachePathBase + panoId + @"\" + _model.ZoomLevel + "Complete.jpg", UriKind.RelativeOrAbsolute));
-					displayedImage = image;
+				// Set the center of the image to the desired heading and narrow to selected field of view
+				Downloader.Downloader imageDownloader = new Downloader.Downloader(_model.CachePathBase);
+				System.Drawing.Image manipulatedImage = null;
+				if (_model.FieldOfView == 360 && _model.Zero360Timelapses) {
+					manipulatedImage = imageDownloader.ManipulateImage(image, panoObject.projection_properties.pano_yaw_deg, 0, _model.FieldOfView);
 				} else {
-					Downloader.Downloader imageDownloader = new Downloader.Downloader(_model.CachePathBase);
-					var manipulatedImage = imageDownloader.ManipulateImage(image, panoObject.projection_properties.pano_yaw_deg, _model.Heading, _model.FieldOfView);
-					_model.MainImageSource = ImageConverter(manipulatedImage);
-					// Show the image width and height on screen
-					UpdateDimenions(manipulatedImage.Width, manipulatedImage.Height);
-					displayedImage = manipulatedImage;
+					manipulatedImage = imageDownloader.ManipulateImage(image, panoObject.projection_properties.pano_yaw_deg, _model.Heading, _model.FieldOfView);
 				}
+				_model.MainImageSource = ImageConverter(manipulatedImage);
+				// Show the image width and height on screen
+				UpdateDimenions(manipulatedImage.Width, manipulatedImage.Height);
+				displayedImage = manipulatedImage;
+				
 
 				progressIndicator.Report(new Tuple<int, int, string>(100, 100, "Displaying image..."));
 
@@ -370,7 +371,7 @@ namespace StreetviewDownloader {
 
 		private void CreateTimelapse_Click(object sender, RoutedEventArgs e) {
 			// Instantiate window
-			TimelapseSetting dialogBox = new TimelapseSetting(_model.PanoID, _model.CachePathBase);
+			TimelapseSetting dialogBox = new TimelapseSetting(_model.PanoID, _model.CachePathBase, _model.Zero360Timelapses, _model.FieldOfView);
 
 			// Show window modally
 			// NOTE: Returns only when window is closed
@@ -383,6 +384,8 @@ namespace StreetviewDownloader {
 
 				string saveFilePath = dialogBox.FilePath + @"\" + dialogBox.FileName;
 				_model.Heading = dialogBox.DesiredHeading;
+				_model.Zero360Timelapses = dialogBox.Zero360Timelapses;
+				_model.FieldOfView = dialogBox.FieldOfView;
 				TimeLapseAsync(saveFilePath, _model.PanoID);
 			}
 		}
@@ -405,8 +408,8 @@ namespace StreetviewDownloader {
 					panorama panoObject = _model.DownloadPanoramaInfo(nextPanoId);
 
 					if (panoObject.annotation_properties.Length > 0) {
-						// Just pick the first linked pano, TODO : make this user selectable
-						var nextPano = panoObject.annotation_properties.OrderBy(item => item.yaw_deg).First();
+						// Pick pano with closest heading
+						var nextPano = panoObject.annotation_properties.OrderBy(item => Math.Abs(_model.Heading - item.yaw_deg)).First();
 						nextPanoId = nextPano.pano_id;
 						_model.Heading = nextPano.yaw_deg;
 					} else {

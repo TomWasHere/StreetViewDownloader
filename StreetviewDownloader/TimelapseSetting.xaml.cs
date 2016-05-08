@@ -23,12 +23,14 @@ namespace StreetviewDownloader {
 		public string FileName { get; set; } //Prepend saved images with this name
 		public bool Zero360Timelapses { get; set; }  // Set the heading to zero for 360 panos
 		public decimal DesiredHeading { get; set; } // The compass heading/direction to move
+		public int FieldOfView { get; set; }
 
-		public TimelapseSetting(string panoID, string cachePathBase) {
+		public TimelapseSetting(string panoID, string cachePathBase, bool zero360, int FOV) {
 			FilePath = string.Empty;
-			Zero360Timelapses = true;
+			Zero360Timelapses = zero360;
 			DesiredHeading = 0;
 			FileName = "MyTimelapse";
+			FieldOfView = FOV;
 
 			InitializeComponent();
 
@@ -37,7 +39,8 @@ namespace StreetviewDownloader {
 		}
 
 		private void DisplayThumbnails(string panoId, string cachePathBase) {
-			StreetviewDownloaderModel _model = new StreetviewDownloaderModel {
+			StreetviewDownloaderModel _model = new StreetviewDownloaderModel
+			{
 				PanoID = panoId
 			};
 
@@ -123,6 +126,11 @@ namespace StreetviewDownloader {
 		}
 
 		private void StartTimelapse_Click(object sender, RoutedEventArgs e) {
+			if (FilePath == string.Empty || FileName == string.Empty) {
+				MessageBox.Show("Filename and directory required.");
+				return;
+			}
+
 			DialogResult = true;
 			this.Close();
 		}

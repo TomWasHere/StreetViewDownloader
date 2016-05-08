@@ -19,7 +19,13 @@
             <Label Content="Images will be saved MyTimelapse001.jpg, MyTimelapse002.jpg etc..."/>
         </WrapPanel>
         <WrapPanel Margin="10,1,10,9">
-            <Label Content="360 timelapses have a fixed heading (recommended):"/>
+            <Label Content="Field of view:"/>
+            <Slider x:Name="sliderFieldOfView" Value="{Binding FieldOfView}" Minimum="90" Maximum="360" Width="190" TickPlacement="BottomRight" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,0,0,0"/>
+            <Label Content="{Binding Value, ElementName=sliderFieldOfView, UpdateSourceTrigger=PropertyChanged}"/>
+            <Label Content="°" Margin="-10,0,0,0"/>
+        </WrapPanel>
+        <WrapPanel Margin="10,1,10,9">
+            <Label Content="360° timelapses have a fixed heading (recommended for VR):"/>
             <CheckBox IsChecked="{Binding Zero360Timelapses}" VerticalAlignment="Center"/>
         </WrapPanel>
         <Label Content="Pick a direction:"/>

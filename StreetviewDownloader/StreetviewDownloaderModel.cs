@@ -54,6 +54,9 @@ namespace StreetviewDownloader {
 		private System.Windows.Visibility _stopTimelapseVisibility;
 		public System.Windows.Visibility StopTimelapseVisibility { get { return _stopTimelapseVisibility; } set { _stopTimelapseVisibility = value; RaisePropertyChanged("StopTimelapseVisibility"); } }
 
+		private bool _zero360s;
+		public bool Zero360Timelapses { get { return _zero360s; } set { _zero360s = value; RaisePropertyChanged("Zero360Timelapses"); } }
+
 		public StreetviewDownloaderModel() {
 			ZoomLevel = 2;
 			PanoID = "28hi5tiRI9Sl6xylktw2TA";

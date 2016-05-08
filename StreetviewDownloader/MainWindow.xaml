@@ -53,6 +53,9 @@
                                 <Label Content="°" Margin="-10,0,0,0"/>
                             </WrapPanel>
                         </MenuItem>
+                        <MenuItem Header="Zero heading on 360°">
+                            <CheckBox IsChecked="{Binding Zero360Timelapses}"/>
+                        </MenuItem>
                     </MenuItem>
                     <MenuItem Header="_About">
                         <MenuItem Header="_Streetview Downloader v1.0" Click="Website_Click"/>
