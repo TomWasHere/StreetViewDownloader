@@ -1,0 +1,32 @@
+﻿<Window x:Class="StreetviewDownloader.TimelapseSetting"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:StreetviewDownloader"
+        mc:Ignorable="d"
+        Title="Timelapse Settings" Height="400" Width="700"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}">
+    <StackPanel>
+        <Label Content="Create a timelapse by choosing a folder to save images and choosing a direction to move."/>
+        <WrapPanel Margin="10,1,10,9" >
+            <Button Content="Choose Directory..." Click="ChooseDirectory_Click"/>
+            <TextBox x:Name="directory" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="{Binding FilePath, Mode=TwoWay}" VerticalAlignment="Top" Width="470"/>
+        </WrapPanel>
+        <WrapPanel Margin="10,1,10,9" >
+            <Label Content="Filename:"/>
+            <TextBox x:Name="filename" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Center" Text="{Binding FileName, Mode=TwoWay}"  Width="200"/>
+            <Label Content="Images will be saved MyTimelapse001.jpg, MyTimelapse002.jpg etc..."/>
+        </WrapPanel>
+        <WrapPanel Margin="10,1,10,9">
+            <Label Content="360 timelapses have a fixed heading (recommended):"/>
+            <CheckBox IsChecked="{Binding Zero360Timelapses}" VerticalAlignment="Center"/>
+        </WrapPanel>
+        <Label Content="Pick a direction:"/>
+        <WrapPanel HorizontalAlignment="Center" Margin="5,5,5,5" x:Name="thumbnails"/>
+        <WrapPanel HorizontalAlignment="Center">
+            <Button Margin="0,5,5,5" Content="  Start Timelapse  " Click="StartTimelapse_Click"/>
+            <Button Margin="50,5,5,5" Content="  Cancel  " Click="Cancel_Click"/>
+        </WrapPanel>
+    </StackPanel>
+</Window>

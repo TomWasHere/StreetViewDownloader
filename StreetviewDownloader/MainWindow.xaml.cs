@@ -140,7 +140,7 @@ namespace StreetviewDownloader {
 					displayedImage = image;
 				} else {
 					Downloader.Downloader imageDownloader = new Downloader.Downloader(_model.CachePathBase);
-					var manipulatedImage = imageDownloader.ManipulateImage(image, 0, 0, _model.FieldOfView);
+					var manipulatedImage = imageDownloader.ManipulateImage(image, panoObject.projection_properties.pano_yaw_deg, _model.Heading, _model.FieldOfView);
 					_model.MainImageSource = ImageConverter(manipulatedImage);
 					// Show the image width and height on screen
 					UpdateDimenions(manipulatedImage.Width, manipulatedImage.Height);
@@ -221,6 +221,7 @@ namespace StreetviewDownloader {
 				thumbImg.Width = 125;
 
 				button.Content = thumbImg;
+				button.ToolTip = "Click to move to next image. Heading = " + annotation.yaw_deg + " PanoID = " + annotation.pano_id;
 				button.Click += (object sender, RoutedEventArgs e) =>
 				{
 					foreach (Button thumbButton in thumbnails.Children) {
@@ -228,6 +229,7 @@ namespace StreetviewDownloader {
 					}
 
 					_model.PanoID = annotation.pano_id;
+					_model.Heading = annotation.yaw_deg;
 					RetrieveAndDisplayPanorama(annotation.pano_id);
 				};
 				thumbnails.Children.Add(button);
@@ -367,23 +369,20 @@ namespace StreetviewDownloader {
 		}
 
 		private void CreateTimelapse_Click(object sender, RoutedEventArgs e) {
-			MessageBox.Show("The timelapser is a work in progress. Create a new folder in the next popup and give the timelapse files a name. They will have an incrementing number added into the file name you choose eg. Timelapse.jpg will save as Timelapse001.jpg, Timelapse002.jpg... etc", "Timelapse Instructions");
+			// Instantiate window
+			TimelapseSetting dialogBox = new TimelapseSetting(_model.PanoID, _model.CachePathBase);
 
+			// Show window modally
+			// NOTE: Returns only when window is closed
+			Nullable<bool> dialogResult = dialogBox.ShowDialog();
 
-			//Save as dialog box
-			Microsoft.Win32.SaveFileDialog saveDialog = new Microsoft.Win32.SaveFileDialog();
-			saveDialog.FileName = "StreetviewTimelapse"; // Default file name
-			saveDialog.DefaultExt = ".jpg"; // Default file extension
-			saveDialog.Filter = "JPG (.jpg)|*.jpg"; // Filter files by extension
-			saveDialog.OverwritePrompt = true;
-			saveDialog.Title = "Time lapse files will be saved here with the provided name";
+			if (dialogResult == true) {
+				if (!System.IO.Directory.Exists(dialogBox.FilePath)) {
+					System.IO.Directory.CreateDirectory(dialogBox.FilePath);
+				}
 
-			// Show save file dialog box
-			Nullable<bool> result = saveDialog.ShowDialog();
-
-			if (result == true) {
-				string saveFilePath = saveDialog.FileName;
-				saveFilePath = saveFilePath.Substring(0, saveFilePath.Length - 4); // remove file extension
+				string saveFilePath = dialogBox.FilePath + @"\" + dialogBox.FileName;
+				_model.Heading = dialogBox.DesiredHeading;
 				TimeLapseAsync(saveFilePath, _model.PanoID);
 			}
 		}
@@ -407,7 +406,9 @@ namespace StreetviewDownloader {
 
 					if (panoObject.annotation_properties.Length > 0) {
 						// Just pick the first linked pano, TODO : make this user selectable
-						nextPanoId = panoObject.annotation_properties.OrderBy(item => item.yaw_deg).First().pano_id;
+						var nextPano = panoObject.annotation_properties.OrderBy(item => item.yaw_deg).First();
+						nextPanoId = nextPano.pano_id;
+						_model.Heading = nextPano.yaw_deg;
 					} else {
 						//No linked panoramas (it can happen)
 						continueTimelapse = false;
@@ -418,6 +419,9 @@ namespace StreetviewDownloader {
 
 			} catch (Exception e) {
 				MessageBox.Show(e.Message + Environment.NewLine + e.InnerException, "An error occured creating timelapse images");
+			} finally {
+				// Open the folder the images are saved to
+				System.Diagnostics.Process.Start(fileSavePath.Substring(0, fileSavePath.LastIndexOf(@"\")));
 			}
 		}
 
@@ -425,5 +429,14 @@ namespace StreetviewDownloader {
 			continueTimelapse = false;
 			_model.StopTimelapseVisibility = Visibility.Hidden;
 		}
+
+		private void Website_Click(object sender, RoutedEventArgs e) {
+			System.Diagnostics.Process.Start("https://github.com/TomWasHere/StreetViewDownloader");
+		}
+
+		private void FOVSlider_Changed(object sender, RoutedEventArgs e) {
+			RetrieveAndDisplayPanorama(_model.PanoID);
+		}
+
 	}
 }

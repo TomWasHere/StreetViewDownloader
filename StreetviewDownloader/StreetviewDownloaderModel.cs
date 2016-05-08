@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace StreetviewDownloader {
-	class StreetviewDownloaderModel : ObservableObject {
+	public class StreetviewDownloaderModel : ObservableObject {
 		// All images will be stored here
 		public string CachePathBase = Directory.GetCurrentDirectory() + @"\cache\";
 
@@ -17,6 +17,9 @@ namespace StreetviewDownloader {
 
 		private string _panoID;
 		public string PanoID { get { return _panoID; } set { _panoID = value; RaisePropertyChanged("PanoID"); } }
+
+		private decimal _heading;
+		public decimal Heading { get { return _heading; } set { _heading = value; RaisePropertyChanged("Heading"); } }
 
 		private string _location;
 		public string Location { get { return _location; } set { _location = value; RaisePropertyChanged("Location"); } }

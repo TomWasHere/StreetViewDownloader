@@ -39,12 +39,46 @@ namespace Downloader {
 
 			string fullImageName = zoomLevel + "Complete.jpg";
 			if (!File.Exists(panoCacheDirectory + fullImageName)) {
-				DownloadTiles(panoId, zoomLevel, progress);
-				CompileTilesToImage(panoId, zoomLevel, panoCacheDirectory + fullImageName, progress);
+
+				// Check for cached higher res images already downloaded
+				if (zoomLevel < 4 && File.Exists(panoCacheDirectory + 4 + "Complete.jpg")) {
+					ResizeLargeImageToSmallerImage(zoomLevel, panoCacheDirectory + fullImageName, panoCacheDirectory + 4 + "Complete.jpg");
+				} else if (zoomLevel < 3 && File.Exists(panoCacheDirectory + 3 + "Complete.jpg")) {
+					ResizeLargeImageToSmallerImage(zoomLevel, panoCacheDirectory + fullImageName, panoCacheDirectory + 3 + "Complete.jpg");
+				} else {
+
+					DownloadTiles(panoId, zoomLevel, progress);
+					CompileTilesToImage(panoId, zoomLevel, panoCacheDirectory + fullImageName, progress);
+
+				}
 			}
 
 			// The full image is stored in cache
 			return Image.FromFile(panoCacheDirectory + fullImageName);
+		}
+
+		private void ResizeLargeImageToSmallerImage(int desiredZoomLevel, string destinationPath, string sourcePath) {
+			int imageWidth = 1664;
+			int imageHeight = 832;
+
+			if (desiredZoomLevel == 2) {
+				imageWidth = 1664;
+				imageHeight = 832;
+			} else if (desiredZoomLevel == 3) {
+				imageWidth = 3328;
+				imageHeight = 1664;
+			} else if (desiredZoomLevel == 4) {
+				imageWidth = 6656;
+				imageHeight = 3328;
+			}
+
+			System.Drawing.Image smallImage = new System.Drawing.Bitmap(imageWidth, imageHeight);
+			Image bigImage = new Bitmap(sourcePath);
+			using (Graphics g = Graphics.FromImage(smallImage)) {
+				g.DrawImage(bigImage, 0, 0, smallImage.Width, smallImage.Height);
+			}
+
+			smallImage.Save(destinationPath, System.Drawing.Imaging.ImageFormat.Jpeg);
 		}
 
 		public System.Drawing.Image GetThumbnail(string panoId) {
@@ -183,8 +217,11 @@ namespace Downloader {
 		/// <param name="desiredSize">In degrees</param>
 		/// <returns></returns>
 		public Image ManipulateImage(Image originalImage, decimal originalHeading, decimal desiredHeading, decimal desiredSize) {
+			int safeWidth = originalImage.Width - Mod(originalImage.Width, 360);
+			Image safeOriginalImage = new Bitmap(originalImage, safeWidth, safeWidth / 2);
+
 			decimal headingDelta = (Mod((desiredHeading - originalHeading + 180), 360)) - 180; //The angle difference between panoH and desired H
-			Image maniuplatedImage = new Bitmap(originalImage);
+			Image maniuplatedImage = new Bitmap(safeOriginalImage);
 			int imageWidth = maniuplatedImage.Width;
 			int imageHeight = maniuplatedImage.Height;
 			decimal pixelDegreeSize = imageWidth / 360;
@@ -200,16 +237,16 @@ namespace Downloader {
 							Rectangle newLeftHandSide = new Rectangle(newLeftHandPixelPosition, 0, imageWidth - newLeftHandPixelPosition, imageHeight);
 							Rectangle newRightHandSide = new Rectangle(0, 0, newLeftHandPixelPosition, imageHeight);
 
-							g.DrawImage(originalImage, 0, 0, newLeftHandSide, GraphicsUnit.Pixel);
-							g.DrawImage(originalImage, imageWidth - newLeftHandPixelPosition, 0, newRightHandSide, GraphicsUnit.Pixel);
+							g.DrawImage(safeOriginalImage, 0, 0, newLeftHandSide, GraphicsUnit.Pixel);
+							g.DrawImage(safeOriginalImage, imageWidth - newLeftHandPixelPosition, 0, newRightHandSide, GraphicsUnit.Pixel);
 						} else {
 							//Desired heading is on the left hand side of the centre
 							int newRightHandPixelPosition = decimal.ToInt32(headingPixelPosition + (180 * pixelDegreeSize));
 							Rectangle newRightHandSide = new Rectangle(0, 0, newRightHandPixelPosition, imageHeight);
 							Rectangle newLeftHandSide = new Rectangle(newRightHandPixelPosition, 0, imageWidth - newRightHandPixelPosition, imageHeight);
 
-							g.DrawImage(originalImage, 0, 0, newLeftHandSide, GraphicsUnit.Pixel);
-							g.DrawImage(originalImage, imageWidth - newRightHandPixelPosition, 0, newRightHandSide, GraphicsUnit.Pixel);
+							g.DrawImage(safeOriginalImage, 0, 0, newLeftHandSide, GraphicsUnit.Pixel);
+							g.DrawImage(safeOriginalImage, imageWidth - newRightHandPixelPosition, 0, newRightHandSide, GraphicsUnit.Pixel);
 						}
 					}
 
